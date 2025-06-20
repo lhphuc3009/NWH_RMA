@@ -203,8 +203,9 @@ with tab1:
         )
 
 # === TAB 2: Trợ lý AI ===
-with tab2:
-    st.header("🤖 Trợ lý AI – Hỏi đáp theo dữ liệu")
+if tab2:
+    with tab2:
+        st.header("🤖 Trợ lý AI – Hỏi đáp theo dữ liệu")
     question = st.text_area("✍️ Nhập câu hỏi:")
 
     df_ai = data_filtered.tail(max_rows)
