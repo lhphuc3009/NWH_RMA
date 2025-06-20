@@ -85,7 +85,24 @@ if data.empty:
     st.stop()
 
 # === 2. Tạo tabs giao diện mới ===
-tab1, tab2, tab3 = st.tabs(["📊 Dữ liệu RMA", "🤖 Trợ lý AI", "📋 Báo cáo & Thống kê"])
+# Xác định vai trò người dùng từ session
+role = st.session_state.get("role", "guest")
+
+# Tạo danh sách label động theo phân quyền
+tab_labels = ["📊 Dữ liệu RMA"]
+if role in ["admin", "mod"]:
+    tab_labels.append("🤖 Trợ lý AI")
+tab_labels.append("📋 Báo cáo & Thống kê")
+
+# Gán tab theo số lượng
+tabs = st.tabs(tab_labels)
+tab1 = tabs[0]
+if role in ["admin", "mod"]:
+    tab2 = tabs[1]
+    tab3 = tabs[2]
+else:
+    tab2 = None
+    tab3 = tabs[1]
 
 with st.sidebar:
     # 👋 Chào người dùng
