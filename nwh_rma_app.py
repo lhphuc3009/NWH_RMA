@@ -25,10 +25,13 @@ def export_excel_button(df, filename="bao_cao_rma.xlsx", label="📥 Tải file 
     )
 import yaml
 
-# Load danh sách người dùng
+# Load danh sách người dùng (ưu tiên secrets nếu có)
 def load_users():
-    with open("users.yaml", "r", encoding="utf-8") as f:
-        return yaml.safe_load(f)
+    try:
+        return st.secrets["users"]
+    except Exception:
+        with open("data/users.yaml", "r", encoding="utf-8") as f:
+            return yaml.safe_load(f)
 
 users = load_users()
 
