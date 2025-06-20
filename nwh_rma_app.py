@@ -118,9 +118,10 @@ with st.sidebar:
     # 📕 Bộ lọc nâng cao
     filters = render_bo_loc_sidebar(data, prefix_key="main")
 
-    # ⚙️ Tùy chọn gửi AI (thu gọn mặc định)
-    with st.expander("⚙️ Tuỳ chọn gửi AI", expanded=False):
-        max_rows = st.slider("📌 Giới hạn số dòng gửi AI", 50, 1000, 200)
+    if role in ["admin", "mod"]:
+        # ⚙️ Tùy chọn gửi AI (thu gọn mặc định)
+        with st.expander("⚙️ Tuỳ chọn gửi AI", expanded=False):
+            max_rows = st.slider("📌 Giới hạn số dòng gửi AI", 50, 1000, 200)
 
 # Áp dụng lọc sau khi lấy lựa chọn
 data_filtered = apply_bo_loc(data, filters)
