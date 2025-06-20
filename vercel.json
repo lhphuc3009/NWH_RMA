@@ -1,0 +1,14 @@
+{
+  "builds": [
+    {
+      "src": "nwh_rma_app.py",
+      "use": "@vercel/python"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "nwh_rma_app.py"
+    }
+  ]
+}
