@@ -84,6 +84,7 @@ df_raw = chuan_hoa_ten_cot(df_raw)
 if data.empty:
     st.stop()
 
+
 # === 2. Tạo tabs giao diện mới ===
 # Xác định vai trò người dùng từ session
 role = st.session_state.get("role", "guest")
@@ -103,8 +104,8 @@ if role in ["admin", "mod"]:
 else:
     tab2 = None
     tab3 = tabs[1]
-
 with st.sidebar:
+    role = st.session_state.get("role", "guest")
     # 👋 Chào người dùng
     full_name = st.session_state.get("full_name", "---")
     st.markdown(f"## 👋 Xin chào, **:green[{full_name}]** !")
@@ -118,8 +119,8 @@ with st.sidebar:
     # 📕 Bộ lọc nâng cao
     filters = render_bo_loc_sidebar(data, prefix_key="main")
 
+    # ⚙️ Tùy chọn gửi AI (thu gọn mặc định)
     if role in ["admin", "mod"]:
-        # ⚙️ Tùy chọn gửi AI (thu gọn mặc định)
         with st.expander("⚙️ Tuỳ chọn gửi AI", expanded=False):
             max_rows = st.slider("📌 Giới hạn số dòng gửi AI", 50, 1000, 200)
 
@@ -206,60 +207,60 @@ with tab1:
 # === TAB 2: Trợ lý AI ===
 if tab2:
     with tab2:
-        st.header("🤖 Trợ lý AI – Hỏi đáp theo dữ liệu")
-    question = st.text_area("✍️ Nhập câu hỏi:")
-
-    df_ai = data_filtered.tail(max_rows)
-
-    if st.button("🤖 Gửi câu hỏi"):
-        if question.strip() == "":
-            st.warning("❗ Vui lòng nhập câu hỏi.")
-        else:
-            with st.spinner("⏳ Đang truy vấn AI, vui lòng chờ..."):
-                # Tiến trình ảo
-                progress_placeholder = st.empty()
-                progress_bar = progress_placeholder.progress(0)
-                for percent_complete in range(100):
-                    time.sleep(0.01)
-                    progress_bar.progress(percent_complete + 1)
-                progress_placeholder.empty()
-
-                # Gọi AI
-                api_key = os.getenv("OPENAI_API_KEY")
-                ai_response, prompt_used = query_openai(
-                    user_question=question,
-                    df_summary=df_ai,
-                    df_raw=df_raw,
-                    api_key=api_key
-                )
-
-            # ✅ Hiện thông báo thành công rồi ẩn đi
-            success_box = st.empty()
-            success_box.success("✅ Đã xử lý xong câu hỏi.")
-            time.sleep(1)
-            success_box.empty()
-
-            # 📋 Hiển thị kết quả nếu có
-            if ai_response:
-                st.markdown("### 📋 Kết quả:")
-                st.markdown(ai_response, unsafe_allow_html=True)
-            else:
-                st.warning("⚠️ Không có nội dung trả về từ AI hoặc intent.")
-
-            # 🔍 Hiển thị Debug nếu là admin
-            if st.session_state.get("debug_mode", False):
-                st.markdown("---")
-                st.markdown("### 🧠 Intent & Prompt Debug")
-
-                if prompt_used is not None:
-                    st.markdown("#### 🧠 Intent hệ thống hiểu:")
-                    st.code(prompt_used.get("intent", "Không rõ"), language="json")
-
-                    st.markdown("#### 🧾 Prompt được gửi tới AI:")
-                    st.code(prompt_used.get("prompt", ""), language="markdown")
+            st.header("🤖 Trợ lý AI – Hỏi đáp theo dữ liệu")
+            question = st.text_area("✍️ Nhập câu hỏi:")
+        
+            df_ai = data_filtered.tail(max_rows)
+        
+            if st.button("🤖 Gửi câu hỏi"):
+                if question.strip() == "":
+                    st.warning("❗ Vui lòng nhập câu hỏi.")
                 else:
-                    st.warning("⚠️ Không có dữ liệu về intent hoặc prompt được trả về.")
-
+                    with st.spinner("⏳ Đang truy vấn AI, vui lòng chờ..."):
+                        # Tiến trình ảo
+                        progress_placeholder = st.empty()
+                        progress_bar = progress_placeholder.progress(0)
+                        for percent_complete in range(100):
+                            time.sleep(0.01)
+                            progress_bar.progress(percent_complete + 1)
+                        progress_placeholder.empty()
+        
+                        # Gọi AI
+                        api_key = os.getenv("OPENAI_API_KEY")
+                        ai_response, prompt_used = query_openai(
+                            user_question=question,
+                            df_summary=df_ai,
+                            df_raw=df_raw,
+                            api_key=api_key
+                        )
+        
+                    # ✅ Hiện thông báo thành công rồi ẩn đi
+                    success_box = st.empty()
+                    success_box.success("✅ Đã xử lý xong câu hỏi.")
+                    time.sleep(1)
+                    success_box.empty()
+        
+                    # 📋 Hiển thị kết quả nếu có
+                    if ai_response:
+                        st.markdown("### 📋 Kết quả:")
+                        st.markdown(ai_response, unsafe_allow_html=True)
+                    else:
+                        st.warning("⚠️ Không có nội dung trả về từ AI hoặc intent.")
+        
+                    # 🔍 Hiển thị Debug nếu là admin
+                    if st.session_state.get("debug_mode", False):
+                        st.markdown("---")
+                        st.markdown("### 🧠 Intent & Prompt Debug")
+        
+                        if prompt_used is not None:
+                            st.markdown("#### 🧠 Intent hệ thống hiểu:")
+                            st.code(prompt_used.get("intent", "Không rõ"), language="json")
+        
+                            st.markdown("#### 🧾 Prompt được gửi tới AI:")
+                            st.code(prompt_used.get("prompt", ""), language="markdown")
+                        else:
+                            st.warning("⚠️ Không có dữ liệu về intent hoặc prompt được trả về.")
+        
 # === TAB 3: Truy vấn thống kê nhanh ===
 with tab3:
     st.header("📋 Thống kê theo mẫu")
@@ -287,26 +288,62 @@ with tab3:
         if selected_nhoms:
             data = data[data[col_nhom].isin(selected_nhoms)]
 
-    # Danh sách truy vấn
-    options = [
-        "Tổng số sản phẩm tiếp nhận theo tháng/năm/quý",
-        "Tỷ lệ sửa chữa thành công theo tháng/năm/quý",
-        "Danh sách sản phẩm chưa sửa xong",
-        "Top 10 khách hàng gửi nhiều nhất",
-        "Top 10 sản phẩm bảo hành nhiều nhất",
-        "Top lỗi phổ biến theo nhóm hàng",
-        "Thời gian xử lý trung bình",
-        "Top sản phẩm gửi nhiều trong nhóm đã chọn",
-        "Thời gian xử lý trung bình theo khách hàng",
-        "Serial bị gửi nhiều lần",
-        "Hiệu suất sửa chữa theo kỹ thuật viên",
-        "Top khách hàng gửi nhiều nhất theo sản phẩm",
-        "Top sản phẩm gửi nhiều nhất theo khách hàng"
-    ]
+    # Lấy quyền của người dùng từ session
+    role = st.session_state.get("role", "guest")
 
-    selected = st.selectbox("Chọn loại thống kê:", options)
+    # Cập nhật danh sách truy vấn dựa trên quyền người dùng
+    if role == "admin":
+        options = [
+            "— Chọn loại thống kê —",  # Dòng chọn loại thống kê
+            "Tổng số sản phẩm tiếp nhận theo tháng/năm/quý",
+            "Tỷ lệ sửa chữa thành công theo tháng/năm/quý",
+            "Danh sách sản phẩm chưa sửa xong",
+            "Top 10 khách hàng gửi nhiều nhất",
+            "Top 10 sản phẩm bảo hành nhiều nhất",
+            "Top lỗi phổ biến theo nhóm hàng",
+            "Thời gian xử lý trung bình",
+            "Top sản phẩm bảo hành nhiều trong nhóm hàng đã chọn",
+            "Thời gian xử lý trung bình theo khách hàng",
+            "Serial bị gửi nhiều lần",
+            "Hiệu suất sửa chữa theo kỹ thuật viên",
+            "Số lượng bảo hành theo sản phẩm",
+            "Khách hàng gửi bảo hành bao nhiêu tính theo sản phẩm",
+            "Sản phẩm nhận bảo hành bao nhiêu tính theo khách hàng"
+        ]
+    elif role == "mod":
+        options = [
+            "— Chọn loại thống kê —",  # Dòng chọn loại thống kê
+            "Tổng số sản phẩm tiếp nhận theo tháng/năm/quý",
+            "Top 10 khách hàng gửi nhiều nhất",
+            "Top 10 sản phẩm bảo hành nhiều nhất",
+            "Top lỗi phổ biến theo nhóm hàng",
+            "Top sản phẩm bảo hành nhiều trong nhóm hàng đã chọn",
+            "Serial bị gửi nhiều lần",
+            "Hiệu suất sửa chữa theo kỹ thuật viên",
+            "Số lượng bảo hành theo sản phẩm",
+            "Khách hàng gửi bảo hành bao nhiêu tính theo sản phẩm",
+            "Sản phẩm nhận bảo hành bao nhiêu tính theo khách hàng"
+        ]
+    else:  # user
+        options = [
+            "— Chọn loại thống kê —",  # Dòng chọn loại thống kê
+            "Top lỗi phổ biến theo nhóm hàng",
+            "Top sản phẩm bảo hành nhiều trong nhóm hàng đã chọn",
+            "Số lượng bảo hành theo sản phẩm",
+            "Khách hàng gửi bảo hành bao nhiêu tính theo sản phẩm",
+            "Sản phẩm nhận bảo hành bao nhiêu tính theo khách hàng"
+        ]
 
-    if selected == options[0]:
+
+    # Hiển thị box và yêu cầu chọn
+    selected = st.selectbox("📊 Chọn loại thống kê:", options, index=0)
+
+    # Nếu chưa chọn, dừng lại
+    if selected == "— Chọn loại thống kê —":
+        st.warning("⚠️ Vui lòng chọn loại thống kê.")
+        st.stop()
+
+    if selected == "Tổng số sản phẩm tiếp nhận theo tháng/năm/quý":
         group_by = st.selectbox("Nhóm theo:", ["Năm", "Tháng", "Quý"])
 
         if group_by:
@@ -322,7 +359,7 @@ with tab3:
             else:
                 st.warning("⚠️ Không tìm thấy dữ liệu phù hợp.")
 
-    elif selected == options[1]:
+    elif selected == "Tỷ lệ sửa chữa thành công theo tháng/năm/quý":
         group_by = st.selectbox("Nhóm theo:", ["Năm", "Tháng", "Quý"])
 
         if group_by:
@@ -338,7 +375,7 @@ with tab3:
             else:
                 st.warning("⚠️ Không tìm thấy dữ liệu phù hợp.")
 
-    elif selected == options[2]:
+    elif selected == "Danh sách sản phẩm chưa sửa xong":
         with st.spinner("🔄 Đang truy vấn dữ liệu..."):
             time.sleep(1)
             title, df_out = rma_query_templates.query_3_unrepaired_products(data)
@@ -351,7 +388,7 @@ with tab3:
         else:
             st.warning("⚠️ Không tìm thấy dữ liệu phù hợp.")
 
-    elif selected == options[3]:
+    elif selected == "Top 10 khách hàng gửi nhiều nhất":
         with st.spinner("🔄 Đang truy vấn dữ liệu..."):
             time.sleep(1)
             title, df_out = rma_query_templates.query_4_top_customers(data)
@@ -365,7 +402,7 @@ with tab3:
             st.warning("⚠️ Không tìm thấy dữ liệu phù hợp.")
 
 
-    elif selected == options[4]:
+    elif selected == "Top 10 sản phẩm bảo hành nhiều nhất":
         with st.spinner("🔄 Đang truy vấn dữ liệu..."):
             time.sleep(1)
             title, df_out = rma_query_templates.query_7_top_products(data)
@@ -378,7 +415,7 @@ with tab3:
         else:
             st.warning("⚠️ Không tìm thấy dữ liệu phù hợp.")
 
-    elif selected == options[5]:
+    elif selected == "Top lỗi phổ biến theo nhóm hàng":
         with st.spinner("🔄 Đang truy vấn dữ liệu..."):
             time.sleep(1)
             title, df_out = rma_query_templates.query_top_errors(data)
@@ -395,7 +432,7 @@ with tab3:
         else:
             st.warning("⚠️ Không tìm thấy dữ liệu phù hợp.")
 
-    elif selected == options[6]:
+    elif selected == "Thời gian xử lý trung bình":
         with st.spinner("🔄 Đang truy vấn dữ liệu..."):
             time.sleep(1)
             title, df_out = rma_query_templates.query_avg_processing_time(data)
@@ -409,21 +446,28 @@ with tab3:
             st.warning("⚠️ Không tìm thấy dữ liệu phù hợp.")
 
 
-    elif selected == options[7]:
-        with st.spinner("🔄 Đang truy vấn dữ liệu..."):
-            time.sleep(1)
-            title, df_out = rma_query_templates.query_top_products_in_group(data)
+    elif selected == "Top sản phẩm bảo hành nhiều trong nhóm hàng đã chọn":
+        if selected_nhoms and len(selected_nhoms) == 1:
+            selected_group = selected_nhoms[0]  # lấy nhóm duy nhất
+            with st.spinner("🔄 Đang truy vấn dữ liệu..."):
+                time.sleep(1)
+                title, df_out = rma_query_templates.query_top_products_in_group(data, selected_group)
 
-        if not df_out.empty:
-            st.toast("✅ Đã xử lý xong truy vấn!", icon="🎉")
-            st.subheader(title)
-            st.dataframe(df_out)
-            export_excel_button(df_out, filename="top_san_pham_nhom.xlsx")
+            if not df_out.empty:
+                st.toast("✅ Đã xử lý xong truy vấn!", icon="🎉")
+                st.subheader(title)
+                st.dataframe(df_out)
+                export_excel_button(df_out, filename=f"top_san_pham_{selected_group}.xlsx")
+            else:
+                st.warning("⚠️ Không tìm thấy dữ liệu phù hợp.")
+        elif len(selected_nhoms) > 1:
+            st.warning("⚠️ Truy vấn này chỉ hỗ trợ khi chọn đúng 1 nhóm hàng.")
         else:
-            st.warning("⚠️ Không tìm thấy dữ liệu phù hợp.")
+            st.warning("⚠️ Vui lòng chọn nhóm hàng cần phân tích.")
 
 
-    elif selected == options[8]:
+
+    elif selected == "Thời gian xử lý trung bình theo khách hàng":
         col_khach = find_col(data.columns, "tên khách hàng")
         if col_khach:
             unique_khach = data[col_khach].dropna().unique().tolist()
@@ -444,7 +488,7 @@ with tab3:
             else:
                 st.warning("⚠️ Không tìm thấy dữ liệu phù hợp.")
 
-    elif selected == options[9]:
+    elif selected == "Serial bị gửi nhiều lần":
         with st.spinner("🔄 Đang truy vấn dữ liệu..."):
             time.sleep(1)
             title, df_out = rma_query_templates.query_serial_lap_lai(data)
@@ -457,7 +501,7 @@ with tab3:
         else:
             st.warning("⚠️ Không tìm thấy dữ liệu phù hợp.")
 
-    elif selected == options[10]:
+    elif selected == "Hiệu suất sửa chữa theo kỹ thuật viên":
         with st.spinner("🔄 Đang truy vấn dữ liệu..."):
             time.sleep(1)
             title, df_out = rma_query_templates.query_21_technician_status_summary(data)
@@ -470,7 +514,7 @@ with tab3:
         else:
             st.warning("⚠️ Không tìm thấy dữ liệu phù hợp.")
 
-    elif selected == options[11]:
+    elif selected == "Khách hàng gửi bảo hành bao nhiêu tính theo sản phẩm":
         col_san_pham = find_col(data.columns, "sản phẩm")
         if col_san_pham:
             unique_products = data[col_san_pham].dropna().unique().tolist()
@@ -492,7 +536,7 @@ with tab3:
         else:
             st.error("❌ Không tìm thấy cột tên sản phẩm trong dữ liệu.")
 
-    elif selected == options[12]:
+    elif selected == "Sản phẩm nhận bảo hành bao nhiêu tính theo khách hàng":
         col_khach = find_col(data.columns, "tên khách hàng")
         col_san_pham = find_col(data.columns, "sản phẩm")
 
@@ -513,3 +557,36 @@ with tab3:
                 export_excel_button(df_out, filename=f"top_san_pham_{selected_khach}.xlsx")
         else:
             st.error("❌ Không tìm thấy cột 'tên khách hàng' hoặc 'sản phẩm' trong dữ liệu.")
+         
+    elif selected == "Số lượng bảo hành theo sản phẩm":
+        col_sp = find_col(data.columns, "sản phẩm")
+        ok_col = find_col(data.columns, "đã sửa xong")  # Cột "Đã sửa xong"
+        if col_sp and ok_col:
+            unique_products = sorted(data[col_sp].dropna().unique().tolist())
+            selected_product = st.selectbox("🧱 Chọn sản phẩm cần thống kê:", unique_products)
+
+            if selected_product:
+                with st.spinner("🔄 Đang truy vấn dữ liệu..."):
+                    time.sleep(1)
+                    # Đếm số lượt gửi và số lượng đã sửa xong
+                    count = data[data[col_sp] == selected_product].shape[0]
+                    fixed = data[data[col_sp] == selected_product][ok_col].sum()
+                    ratio = round(fixed / count * 100, 1) if count else 0
+
+                    # Tạo bảng kết quả
+                    df_out = pd.DataFrame({
+                        "Sản phẩm": [selected_product],
+                        "Số lượt gửi": [count],
+                        "Đã sửa xong": [fixed],
+                        "Tỷ lệ sửa thành công (%)": [ratio]
+                    })
+
+                st.toast("✅ Đã xử lý xong truy vấn!", icon="📦")
+                st.subheader(f"Kết quả cho sản phẩm: {selected_product}")
+                st.dataframe(df_out)
+                export_excel_button(df_out, filename=f"bao_hanh_{selected_product}.xlsx")
+            else:
+                st.warning("⚠️ Vui lòng chọn sản phẩm cần thống kê.")
+        else:
+            st.error("❌ Không tìm thấy cột sản phẩm hoặc cột 'Đã sửa xong' trong dữ liệu.")
+

@@ -43,11 +43,23 @@ def query_4_top_customers(df, top_n=10):
 def query_5_top_products_by_customer(df, customer_name, top_n=30):
     customer_col = find_col(df.columns, "khách hàng")
     product_col = find_col(df.columns, "sản phẩm")
-    if not customer_col or not product_col:
-        return "Thiếu cột khách hàng hoặc sản phẩm!", pd.DataFrame()
+    ok_col = find_col(df.columns, "đã sửa xong")  # Cột Đã sửa xong
+    if not all([customer_col, product_col, ok_col]):
+        return f"Thiếu cột khách hàng hoặc sản phẩm!", pd.DataFrame()
+
     df_filtered = df[df[customer_col] == customer_name]
     top_sp = df_filtered[product_col].value_counts().head(top_n)
-    return f"Top sản phẩm khách hàng {customer_name} đã gửi", pd.DataFrame({"Sản phẩm": top_sp.index, "Số lượng": top_sp.values})
+
+    # Tính Đã sửa xong và Tỷ lệ sửa thành công
+    df_out = pd.DataFrame({
+        "Sản phẩm": top_sp.index,
+        "Số lượt gửi": top_sp.values,
+        "Đã sửa xong": df_filtered.groupby(product_col)[ok_col].sum().reindex(top_sp.index).values,
+        "Tỷ lệ sửa thành công (%)": (df_filtered.groupby(product_col)[ok_col].sum().reindex(top_sp.index).values / top_sp.values * 100).round(1)
+    })
+
+    return f"Top sản phẩm khách hàng {customer_name} đã gửi", df_out
+
 
 # Placeholder cho truy vấn 6 đến 21 (để tránh quá tải trong 1 lần chạy)
 def query_6_to_21_placeholder():
@@ -63,10 +75,17 @@ def query_6_total_by_customer_and_time(df, customer_name, group_by):
 
 def query_7_top_products(df, top_n=10):
     product_col = find_col(df.columns, "sản phẩm")
-    if product_col is None:
-        return "Không tìm thấy cột sản phẩm!", pd.DataFrame()
-    top = df[product_col].value_counts().head(top_n)
-    return f"Top {top_n} sản phẩm bảo hành nhiều nhất", pd.DataFrame({"Sản phẩm": top.index, "Số lượng": top.values})
+    ok_col = find_col(df.columns, "đã sửa xong")
+    if not product_col or not ok_col:
+        return "Top sản phẩm bảo hành nhiều nhất", pd.DataFrame()
+
+    df_count = df.groupby(product_col).size().reset_index(name="Số lượt gửi")
+    df_fixed = df.groupby(product_col)[ok_col].sum().reset_index(name="Đã sửa xong")
+    df_out = pd.merge(df_count, df_fixed, on=product_col)
+    df_out["Tỷ lệ sửa thành công (%)"] = (df_out["Đã sửa xong"] / df_out["Số lượt gửi"] * 100).round(1)
+    df_out = df_out.sort_values("Số lượt gửi", ascending=False).head(top_n)
+    return f"Top {top_n} sản phẩm bảo hành nhiều nhất", df_out
+
 
 def query_8_top_rejected_products(df, top_n=5):
     product_col = find_col(df.columns, "sản phẩm")
@@ -160,10 +179,24 @@ def query_15_rejected_products_by_time(df):
 def query_16_top_customers_by_product(df, product_name, top_n=10):
     product_col = find_col(df.columns, "sản phẩm")
     customer_col = find_col(df.columns, "khách hàng")
-    if not all([product_col, customer_col]):
+    ok_col = find_col(df.columns, "đã sửa xong")  # Cột Đã sửa xong
+    if not all([product_col, customer_col, ok_col]):
         return "Thiếu cột sản phẩm hoặc khách hàng!", pd.DataFrame()
-    top_kh = df[df[product_col] == product_name][customer_col].value_counts().head(top_n)
-    return f"Top {top_n} khách hàng gửi {product_name} nhiều nhất", pd.DataFrame({"Khách hàng": top_kh.index, "Số lượng": top_kh.values})
+
+    top_kh = df[df[product_col] == product_name].groupby(customer_col).size().reset_index(name="Số lượt gửi")
+    top_kh_fixed = df[df[product_col] == product_name].groupby(customer_col)[ok_col].sum().reset_index(name="Đã sửa xong")
+    
+    # Merge để có số lượt gửi và Đã sửa xong
+    df_out = pd.merge(top_kh, top_kh_fixed, on=customer_col)
+    
+    # Tính tỷ lệ sửa thành công
+    df_out["Tỷ lệ sửa thành công (%)"] = (df_out["Đã sửa xong"] / df_out["Số lượt gửi"] * 100).round(1)
+
+    # Lấy top_n
+    df_out = df_out.sort_values("Số lượt gửi", ascending=False).head(top_n)
+
+    return f"Top {top_n} khách hàng gửi {product_name} nhiều nhất", df_out
+
 
 def query_17_top_errors_by_customer_and_quarter(df, customer_name, quarter):
     customer_col = find_col(df.columns, "khách hàng")
@@ -280,14 +313,21 @@ def query_avg_processing_time(data):
     return "⏱️ Thời gian xử lý trung bình (ngày)", pd.DataFrame({"Trung bình (ngày)": [round(avg_days, 2)]})
 
     
-def query_top_products_in_group(data, top_n=10):
-    col_product = find_col(data.columns, "sản phẩm")
-    if col_product:
-        df = data[col_product].dropna().value_counts().reset_index()
-        df.columns = ["Tên sản phẩm", "Số lượt gửi"]
-        return f"Top {top_n} sản phẩm có lượt gửi nhiều nhất trong nhóm đã chọn", df.head(top_n)
-    else:
-        return "Không tìm thấy cột sản phẩm", pd.DataFrame()
+def query_top_products_in_group(df, selected_group):
+    group_col = find_col(df.columns, "nhóm")
+    product_col = find_col(df.columns, "sản phẩm")
+    ok_col = find_col(df.columns, "đã sửa xong")
+    if not group_col or not product_col or not ok_col:
+        return f"Top sản phẩm trong nhóm: {selected_group}", pd.DataFrame()
+
+    df_group = df[df[group_col] == selected_group]
+    df_count = df_group.groupby(product_col).size().reset_index(name="Số lượt gửi")
+    df_fixed = df_group.groupby(product_col)[ok_col].sum().reset_index(name="Đã sửa xong")
+    df_out = pd.merge(df_count, df_fixed, on=product_col)
+    df_out["Tỷ lệ sửa thành công (%)"] = (df_out["Đã sửa xong"] / df_out["Số lượt gửi"] * 100).round(1)
+    df_out = df_out.sort_values("Số lượt gửi", ascending=False).head(20)
+    return f"Top sản phẩm trong nhóm: {selected_group}", df_out
+
 
 def query_avg_time_by_customer(data, selected_khach=None):
     col_nhan = find_col(data.columns, "ngay tiep nhan")
