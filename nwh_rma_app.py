@@ -25,15 +25,44 @@ def export_excel_button(df, filename="bao_cao_rma.xlsx", label="📥 Tải file 
     )
 import yaml
 
-# Load danh sách người dùng (ưu tiên secrets nếu có)
-def load_users():
-    try:
-        return st.secrets["users"]
-    except Exception:
-        with open("data/users.yaml", "r", encoding="utf-8") as f:
-            return yaml.safe_load(f)
+def load_users_config():
+    config = None
 
-users = load_users()
+    # Cách 1: Dùng biến môi trường (Vercel)
+    if "USERS_YAML" in os.environ:
+        try:
+            config = yaml.safe_load(os.environ["USERS_YAML"])
+            print("🔐 Đã load users từ biến môi trường (Vercel)")
+        except Exception as e:
+            print("❌ Lỗi đọc USERS_YAML:", e)
+
+    # Cách 2: Dùng st.secrets (Streamlit Cloud)
+    elif "users" in st.secrets:
+        try:
+            config = st.secrets["users"]
+            print("🔐 Đã load users từ st.secrets (Streamlit Cloud)")
+        except Exception as e:
+            print("❌ Lỗi đọc st.secrets:", e)
+
+    # Cách 3: Đọc từ file local (Local dev)
+    elif os.path.exists("data/users.yaml"):
+        try:
+            with open("data/users.yaml", "r", encoding="utf-8") as file:
+                config = yaml.safe_load(file)
+            print("📁 Đã load users từ file local")
+        except Exception as e:
+            print("❌ Lỗi đọc file users.yaml:", e)
+
+    else:
+        print("⚠️ Không tìm thấy cấu hình đăng nhập người dùng")
+    
+    return config
+
+users = load_users_config()
+if users is None:
+    st.error("Không tìm thấy cấu hình đăng nhập!")
+    st.stop()
+
 
 # === Đăng nhập đơn giản ===
 if "logged_in" not in st.session_state:
