@@ -1,0 +1,11 @@
+streamlit
+pandas
+openai
+python-dotenv
+openpyxl
+streamlit-authenticator
+pyyaml
+bcrypt
+xlsxwriter
+plotly
+tabulate
